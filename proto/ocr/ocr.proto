@@ -1,0 +1,4 @@
+syntax = "proto3";
+package ocr;
+option go_package = "github.com/lfun125/tesseract-go/generated/ocr";
+

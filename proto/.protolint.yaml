@@ -1,0 +1,11 @@
+lint:
+  rules:
+    no_default: false
+    remove:
+      - REPEATED_FIELD_NAMES_PLURALIZED
+      - ENUM_FIELD_NAMES_ZERO_VALUE_END_WITH
+      - MAX_LINE_LENGTH
+  rules_option:
+    indent:
+      style: 2
+      not_insert_newline: true

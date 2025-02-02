@@ -29,7 +29,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
+	logger.Info("server started at :50051")
 	if err := s.Serve(lis); err != nil {
 		panic(err)
 	}

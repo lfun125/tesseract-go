@@ -1,10 +1,10 @@
 version: v1
 plugins:
   - plugin: go
-    out: ../generated
+    out: ../
     opt:
       - paths=source_relative
   - plugin: go-grpc
-    out: ../generated
+    out: ../
     opt:
       - paths=source_relative

@@ -1,4 +1,16 @@
 syntax = "proto3";
 package ocr;
-option go_package = "github.com/lfun125/tesseract-go/generated/ocr";
+option go_package = "github.com/lfun125/tesseract-go/ocr";
 
+message OCRRequest {
+  repeated string langs = 1;
+  bytes bytes = 2;
+}
+
+message OCRResponse {
+  string text = 1;
+}
+
+service OCRService {
+  rpc OCR(OCRRequest) returns (OCRResponse);
+}

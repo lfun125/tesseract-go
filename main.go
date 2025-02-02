@@ -1,34 +1,64 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"log"
+	"log/slog"
+	"net"
+	"runtime"
 
-	gosseract "github.com/otiai10/gosseract/v2"
+	"github.com/lfun125/tesseract-go/ocr"
+	"github.com/lfun125/tesseract-go/service"
+	"google.golang.org/grpc"
 )
 
 func main() {
-	// 创建一个新的 Tesseract 客户端
-	client := gosseract.NewClient()
-	defer client.Close()
+	logger := slog.Default()
+	ocrService := service.NewOCRService()
 
-	if err := client.SetLanguage("eng+chi_sim+chi_tra"); err != nil {
+	grpcOpts := []grpc.ServerOption{
+		grpc.ChainUnaryInterceptor(
+			newUnaryRecoveryInterceptor(logger),
+		),
+	}
+	s := grpc.NewServer(grpcOpts...)
+	ocr.RegisterOCRServiceServer(s, ocrService)
+
+	lis, err := net.Listen("tcp", ":50051")
+
+	if err != nil {
 		panic(err)
 	}
-	// client.SetLanguage("chi_sim")
 
-	// 设置图片文件路径
-	err := client.SetImage("/root/iShot_2025-02-02_21.54.44.png")
-	if err != nil {
-		log.Fatalf("设置图片失败: %v", err)
+	if err := s.Serve(lis); err != nil {
+		panic(err)
 	}
+}
 
-	// 获取识别结果
-	text, err := client.Text()
-	if err != nil {
-		log.Fatalf("OCR 识别失败: %v", err)
+func newUnaryRecoveryInterceptor(logger *slog.Logger) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+		defer func() {
+			if err := recover(); err != nil {
+				stackTrace := captureStackTrace(20)
+				logger.With("stackTrace", stackTrace).Error(fmt.Sprintf("Panic recovered: %v", err))
+			}
+		}()
+		data, err := handler(ctx, req)
+		if err != nil {
+			logger.With("err", err).Error("unary handler error")
+		}
+		return data, err
 	}
+}
 
-	fmt.Println("识别结果：")
-	fmt.Println(text)
+func captureStackTrace(depth int) []string {
+	var stack []string
+	for i := 0; i < depth; i++ {
+		_, file, line, ok := runtime.Caller(i + 1) // +1 to skip current frame
+		if !ok {
+			break
+		}
+		stack = append(stack, fmt.Sprintf("%s:%d", file, line))
+	}
+	return stack
 }
